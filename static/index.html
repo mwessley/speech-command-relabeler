@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Speech Commands Relabeler</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <h1>Speech Commands Relabeler</h1>
+  
+  <audio id="audio" controls autoplay></audio>
+  <div id="originalLabelWrapper">
+    <span id="originalLabel">Original label: ...</span>
+    <button id="correctButton" onclick="acceptOriginalLabel()">Correct</button>
+  </div>
+  
+  <div id="labelButtons">
+    <!-- Buttons will be added dynamically -->
+  </div>
+  
+  <button onclick="downloadCSV()">Download CSV</button>
+  <pre id="stats"></pre>
+  
+  <script src="/static/script.js"></script>
+</body>
+</html>
+

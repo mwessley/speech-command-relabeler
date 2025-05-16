@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.tar.gz
+labels.json
+relabels.csv
+audio/
+speech_commands_v0.02/
+.relabel/
