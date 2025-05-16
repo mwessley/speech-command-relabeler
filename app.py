@@ -2,12 +2,18 @@ from flask import Flask, request, jsonify, send_from_directory
 import os, json, csv
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-AUDIO_FOLDER = 'audio'
-LABELS_FILE = 'labels.json'
-RELABELED_CSV = 'relabels.csv'
-ORIGINAL_LABELS_FILE = 'original_labels.json'
-SPLIT_METADATA_FILE = 'split_metadata.json'
 
+# === CONFIGURATION ===
+AUDIO_FOLDER = 'audio'
+DATA_DIR = 'data'
+
+LABELS_FILE = os.path.join(DATA_DIR, 'labels.json')
+RELABELED_CSV = os.path.join(DATA_DIR, 'relabels.csv')
+ORIGINAL_LABELS_FILE = os.path.join(DATA_DIR, 'original_labels.json')
+SPLIT_METADATA_FILE = os.path.join(DATA_DIR, 'split_metadata.json')
+PRIORITY_FILE = os.path.join(DATA_DIR, 'priority_audio_list.json')
+
+# === LOAD METADATA ===
 def load_json(filepath):
     try:
         with open(filepath, 'r') as f:
@@ -18,15 +24,24 @@ def load_json(filepath):
 original_labels = load_json(ORIGINAL_LABELS_FILE)
 split_metadata = load_json(SPLIT_METADATA_FILE)
 
+# === ROUTES ===
+
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
 
 @app.route('/api/audio-list')
 def get_audio_list():
-    files = [f for f in os.listdir(AUDIO_FOLDER) if f.endswith('.wav')]
-    print(f"Found {len(files)} audio files")
-    return jsonify(files)
+    all_files = [f for f in os.listdir(AUDIO_FOLDER) if f.endswith('.wav')]
+    try:
+        with open(PRIORITY_FILE, 'r') as f:
+            priority_list = json.load(f)
+        files = [f for f in priority_list if f in all_files]
+        print(f"Using priority list: {len(files)} files")
+        return jsonify(files)
+    except:
+        print("No priority list found. Using full dataset.")
+        return jsonify(all_files)
 
 @app.route('/api/audio/<filename>')
 def serve_audio(filename):
@@ -65,7 +80,6 @@ def save_label():
         comment = data.get('comment', '')
         tags = ','.join(data.get('tags', []))
         writer.writerow([filename, orig, new_label, split, corrected, comment, tags])
-
 
     print(f"Labeled: {filename} as {new_label} (original: {orig}, corrected: {corrected})")
     return 'OK'
@@ -107,14 +121,14 @@ def stats():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/labels.json')
-def serve_labels_json():
-    return send_from_directory('.', 'labels.json')
+@app.route('/data/<path:filename>')
+def serve_data_file(filename):
+    return send_from_directory(DATA_DIR, filename)
 
 @app.route('/api/export')
 def export_csv():
     try:
-        return send_from_directory('.', RELABELED_CSV, as_attachment=True)
+        return send_from_directory(DATA_DIR, os.path.basename(RELABELED_CSV), as_attachment=True)
     except:
         return "No CSV found", 404
 

@@ -20,7 +20,7 @@ async function fetchAudioList() {
   audioList = await res.json();
 
   // Load existing labeled files
-  const labelRes = await fetch('/labels.json'); // served as static fallback
+  const labelRes = await fetch('/data/labels.json'); // served as static fallback
   const labelData = await labelRes.json();
   labeledFiles = new Set(Object.keys(labelData));
 
