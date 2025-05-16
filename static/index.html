@@ -8,9 +8,26 @@
   <h1>Speech Commands Relabeler</h1>
   
   <audio id="audio" controls autoplay></audio>
+  <div id="waveform" style="height: 100px; margin: 10px 0;"></div>
   <div id="originalLabelWrapper">
-    <span id="originalLabel">Original label: ...</span>
-    <button id="correctButton" onclick="acceptOriginalLabel()">Correct</button>
+    <div id="labelText"><strong>Original label:</strong> <span id="originalLabel">...</span></div>
+    <div id="correctionButtons">
+      <button onclick="acceptOriginalLabel()">Correct</button>
+      <button onclick="markAsUnknown()">Unknown</button>
+    </div>
+  </div>
+  
+
+  <!-- ✅ Tag buttons will go here -->
+  <div id="commentButtons"></div>
+
+  <!-- ✅ Freeform comment -->
+  <textarea id="commentField" rows="2" placeholder="Optional comment..."></textarea>
+
+  <!-- ✅ Navigation -->
+  <div id="navButtons">
+    <button onclick="goBack()">⬅ Back</button>
+    <button onclick="downloadCSV()">Download CSV</button>
   </div>
   
   <div id="labelButtons">
@@ -18,8 +35,22 @@
   </div>
   
   <button onclick="downloadCSV()">Download CSV</button>
-  <pre id="stats"></pre>
+  <div id="statsContainer">
+    <h3>Statistics</h3>
+    <table id="statsTable">
+      <thead>
+        <tr>
+          <th>Label</th>
+          <th>Total</th>
+          <th>Corrected</th>
+          <th>Accuracy (%)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
   
+  <script src="https://unpkg.com/wavesurfer.js"></script>
   <script src="/static/script.js"></script>
 </body>
 </html>

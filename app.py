@@ -60,8 +60,12 @@ def save_label():
     with open(RELABELED_CSV, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         if write_header:
-            writer.writerow(['filename', 'original_label', 'new_label', 'split', 'corrected'])
-        writer.writerow([filename, orig, new_label, split, corrected])
+            writer.writerow(['filename', 'original_label', 'new_label', 'split', 'corrected', 'comment', 'tags'])
+
+        comment = data.get('comment', '')
+        tags = ','.join(data.get('tags', []))
+        writer.writerow([filename, orig, new_label, split, corrected, comment, tags])
+
 
     print(f"Labeled: {filename} as {new_label} (original: {orig}, corrected: {corrected})")
     return 'OK'

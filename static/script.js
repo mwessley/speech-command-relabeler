@@ -4,10 +4,16 @@ const labels = [
   "bed", "bird", "cat", "dog", "happy", "house", "marvin", "sheila", "tree", "wow",
   "backward", "forward", "follow", "learn", "visual", "unknown"
 ];
+const metadataTags = [
+  "cut", "humming", "noisy", "noisy (other words)", "silent",
+  "distorted mic", "audible but very (silent)", "nothing"
+];
 
+let waveSurfer = null;
 let audioList = [];
 let currentIndex = 0;
 let labeledFiles = new Set();
+let previousIndices = [];
 
 async function fetchAudioList() {
   const res = await fetch('/api/audio-list');
@@ -19,6 +25,7 @@ async function fetchAudioList() {
   labeledFiles = new Set(Object.keys(labelData));
 
   createButtons();
+  // audioList = audioList.sort(() => Math.random() - 0.5); // shuffle
   loadAudio();
 }
 
@@ -44,13 +51,13 @@ function createButtons() {
   container.appendChild(skipBtn);
 }
 
+
 function loadAudio() {
   if (currentIndex >= audioList.length) {
     alert("Finished all files.");
     return;
   }
 
-  // Auto-skip if already labeled
   while (currentIndex < audioList.length && labeledFiles.has(audioList[currentIndex])) {
     console.log("Auto-skipping labeled file:", audioList[currentIndex]);
     currentIndex++;
@@ -62,16 +69,30 @@ function loadAudio() {
   }
 
   const filename = audioList[currentIndex];
+  const audioUrl = `/api/audio/${filename}`;
+
   const audio = document.getElementById('audio');
-  audio.src = `/api/audio/${filename}`;
+  audio.src = audioUrl;
   audio.play();
 
   fetch(`/api/original-label/${filename}`)
     .then(res => res.json())
     .then(data => {
-      document.getElementById('originalLabel').innerText =
-        `Original label: ${data.original_label}`;
+      document.getElementById('originalLabel').innerText = data.original_label;
     });
+
+  // Initialize WaveSurfer once
+  if (!waveSurfer) {
+    waveSurfer = WaveSurfer.create({
+      container: '#waveform',
+      waveColor: '#dcdcdc',
+      progressColor: '#222',
+      height: 80
+    });
+  }
+
+  // Load and play
+  waveSurfer.load(audioUrl);
 }
 
 async function submitLabel(label) {
@@ -94,20 +115,27 @@ async function updateStats() {
   const res = await fetch('/api/stats');
   const stats = await res.json();
 
-  let out = `Total labeled: ${stats.total}
-Corrected: ${stats.corrected}
-Train corrected: ${stats.train_corrected} / ${stats.train_total}
-Test corrected: ${stats.test_corrected} / ${stats.test_total}\n\n`;
+  const tbody = document.querySelector('#statsTable tbody');
+  tbody.innerHTML = '';
 
   if (stats.per_label) {
-    out += `Per-label corrections:\n`;
-    for (const [label, data] of Object.entries(stats.per_label)) {
-      out += `${label}: ${data.corrected}/${data.total}\n`;
-    }
-  }
+    Object.entries(stats.per_label).forEach(([label, data]) => {
+      const accuracy = data.total > 0
+        ? ((data.total - data.corrected) / data.total * 100).toFixed(1)
+        : '—';
 
-  document.getElementById('stats').innerText = out;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${label}</td>
+        <td>${data.total}</td>
+        <td>${data.corrected}</td>
+        <td>${accuracy}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
 }
+
 
 function downloadCSV() {
   window.location.href = '/api/export';
@@ -123,5 +151,75 @@ function acceptOriginalLabel() {
     });
 }
 
-fetchAudioList();
-updateStats();
+function createMetadataButtons() {
+  const container = document.getElementById('commentButtons');
+  if (!container) {
+    console.error("commentButtons div not found!");
+    return;
+  }
+
+  container.innerHTML = '<b>Tags:</b><br>';
+  metadataTags.forEach(tag => {
+    const btn = document.createElement('button');
+    btn.innerText = tag;
+    btn.onclick = () => toggleTag(btn, tag);
+    btn.dataset.active = "false";
+    container.appendChild(btn);
+  });
+}
+
+function toggleTag(button, tag) {
+  if (button.dataset.active === "false") {
+    button.style.backgroundColor = "#ccc";
+    button.dataset.active = "true";
+  } else {
+    button.style.backgroundColor = "";
+    button.dataset.active = "false";
+  }
+}
+
+function markAsUnknown() {
+  submitLabel("unknown");
+}
+
+function getActiveTags() {
+  return Array.from(document.querySelectorAll('#commentButtons button'))
+    .filter(btn => btn.dataset.active === "true")
+    .map(btn => btn.innerText);
+}
+
+async function submitLabel(label) {
+  const filename = audioList[currentIndex];
+  const comment = document.getElementById('commentField').value;
+  const tags = getActiveTags();
+
+  await fetch('/api/save-label', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, label, comment, tags })
+  });
+
+  labeledFiles.add(filename);
+  previousIndices.push(currentIndex);
+  currentIndex++;
+  document.getElementById('commentField').value = '';
+  createMetadataButtons(); // reset tags
+  loadAudio();
+  updateStats();
+}
+
+function goBack() {
+  if (previousIndices.length > 0) {
+    currentIndex = previousIndices.pop();
+    loadAudio();
+  } else {
+    alert("No previous audio to go back to.");
+  }
+}
+
+window.onload = () => {
+  fetchAudioList();
+  createMetadataButtons();
+  updateStats();
+};
+

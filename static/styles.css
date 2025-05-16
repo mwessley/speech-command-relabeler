@@ -18,3 +18,63 @@
   gap: 10px;
   margin: 10px 0;
 }
+
+#commentButtons button {
+  margin: 3px;
+}
+
+textarea {
+  width: 100%;
+  margin-top: 10px;
+}
+
+#navButtons {
+  margin-top: 10px;
+}
+
+#originalLabelWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+#labelText {
+  flex: 1;
+  min-width: 200px;
+}
+
+#correctionButtons {
+  display: flex;
+  gap: 10px;
+}
+
+#correctionButtons button {
+  margin-right: 10px;
+  padding: 8px 14px;
+  font-weight: bold;
+}
+
+#correctionButtons button:first-child {
+  background-color: #d4ffd4; /* green for correct */
+}
+
+#correctionButtons button:last-child {
+  background-color: #ffe9b5; /* yellow for unknown */
+}
+
+#statsContainer {
+  margin-top: 20px;
+}
+
+#statsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#statsTable th, #statsTable td {
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  text-align: left;
+}
